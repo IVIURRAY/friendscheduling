@@ -7,13 +7,13 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (including dev dependencies for Expo)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Expose port 19006 (Expo default)
+# Expose port 19006 (Expo web default)
 EXPOSE 19006
 
 # Start the Expo development server
