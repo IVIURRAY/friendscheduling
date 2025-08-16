@@ -167,32 +167,36 @@ class ApiService {
 
   // Get user profile
   async getUserProfile(userId = 1) {
-    // For now, return mock user data since we don't have a user profile endpoint
-    return {
-      id: userId,
-      name: 'John Doe',
-      email: 'john@example.com',
-      joinDate: 'January 2024',
-      totalFriends: 3,
-      totalMeetings: 3,
-    };
+    try {
+      const userData = await this.makeRequest(`/auth/profile/${userId}`);
+      return {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        joinDate: userData.createdAt ? new Date(userData.createdAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long' 
+        }) : 'Unknown',
+        totalFriends: 0, // Will be calculated in getDashboardStats
+        totalMeetings: 0, // Will be calculated in getDashboardStats
+      };
+    } catch (error) {
+      console.error('Failed to get user profile:', error);
+      throw error;
+    }
   }
 
   // Get dashboard stats
   async getDashboardStats(userId = 1) {
     try {
-      const [friends, meetings] = await Promise.all([
-        this.getFriends(userId),
-        this.getUpcomingMeetings(userId),
-      ]);
-
-      const closeFriends = friends.filter(friend => friend.isClose);
-
+      const stats = await this.makeRequest(`/friends/${userId}/stats`);
+      const meetings = await this.getUpcomingMeetings(userId);
+      
       return {
-        totalFriends: friends.length,
-        closeFriends: closeFriends.length,
-        upcomingMeetings: meetings.length,
-        pendingRequests: 0, // We'll need to implement this endpoint
+        totalFriends: stats.totalFriends || 0,
+        closeFriends: stats.closeFriends || 0,
+        upcomingMeetings: meetings.length || 0,
+        pendingRequests: stats.pendingRequests || 0,
       };
     } catch (error) {
       console.error('Failed to get dashboard stats:', error);

@@ -80,4 +80,17 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid token"));
         }
     }
+    
+    @GetMapping("/profile/{userId}")
+    public ResponseEntity<?> getUserProfile(@PathVariable Long userId) {
+        try {
+            User user = userService.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            UserDto userDto = userService.convertToDto(user);
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

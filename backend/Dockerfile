@@ -1,5 +1,5 @@
-# Use OpenJDK 21 as base image
-FROM openjdk:21-jdk-slim
+# Use Eclipse Temurin JDK 21 as base image (more reliable than OpenJDK)
+FROM eclipse-temurin:21-jdk
 
 # Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
@@ -13,8 +13,8 @@ COPY gradle gradle
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 
-# Make gradlew executable
-RUN chmod +x ./gradlew
+# Make gradlew executable and download wrapper if needed
+RUN chmod +x ./gradlew && ./gradlew --version
 
 # Download dependencies (this layer will be cached if dependencies don't change)
 RUN ./gradlew dependencies --no-daemon

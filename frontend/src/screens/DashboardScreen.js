@@ -48,26 +48,33 @@ const DashboardScreen = () => {
       ]);
       
       setStats(dashboardStats);
-      setUpcomingMeetings(meetings);
+      setUpcomingMeetings(meetings || []);
       
       // Update user profile with real data
       setUserProfile({
-        name: profile.name,
-        email: profile.email,
-        joinDate: profile.joinDate,
-        totalFriends: dashboardStats.totalFriends,
-        totalMeetings: dashboardStats.upcomingMeetings,
+        name: profile.name || 'User',
+        email: profile.email || 'user@example.com',
+        joinDate: profile.joinDate || 'Unknown',
+        totalFriends: dashboardStats.totalFriends || 0,
+        totalMeetings: dashboardStats.upcomingMeetings || 0,
       });
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      // Fallback to default values if API fails
+      // Set empty state when API fails
       setUserProfile({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        joinDate: 'January 2024',
+        name: 'User',
+        email: 'user@example.com',
+        joinDate: 'Unknown',
         totalFriends: 0,
         totalMeetings: 0,
       });
+      setStats({
+        totalFriends: 0,
+        closeFriends: 0,
+        upcomingMeetings: 0,
+        pendingRequests: 0,
+      });
+      setUpcomingMeetings([]);
     } finally {
       setLoading(false);
     }

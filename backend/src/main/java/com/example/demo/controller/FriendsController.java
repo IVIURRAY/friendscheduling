@@ -37,6 +37,16 @@ public class FriendsController {
         }
     }
     
+    @GetMapping("/{userId}/stats")
+    public ResponseEntity<Map<String, Object>> getDashboardStats(@PathVariable Long userId) {
+        try {
+            Map<String, Object> stats = friendshipService.getDashboardStats(userId);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
     @PostMapping("/{userId}/add")
     public ResponseEntity<?> addFriend(@PathVariable Long userId, @RequestBody Map<String, String> request) {
         try {

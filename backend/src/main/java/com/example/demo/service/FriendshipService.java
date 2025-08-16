@@ -8,7 +8,9 @@ import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,6 +65,33 @@ public class FriendshipService {
                     );
                 })
                 .collect(Collectors.toList());
+    }
+    
+    public Map<String, Object> getDashboardStats(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        List<Friendship> allFriendships = friendshipRepository.findByUserOrFriend(user);
+        
+        long totalFriends = allFriendships.stream()
+                .filter(friendship -> friendship.getStatus() == Friendship.FriendshipStatus.ACCEPTED)
+                .count();
+        
+        long closeFriends = allFriendships.stream()
+                .filter(friendship -> friendship.getStatus() == Friendship.FriendshipStatus.ACCEPTED && friendship.getIsCloseFriend())
+                .count();
+        
+        long pendingRequests = allFriendships.stream()
+                .filter(friendship -> friendship.getFriend().getId().equals(userId) && 
+                        friendship.getStatus() == Friendship.FriendshipStatus.PENDING)
+                .count();
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalFriends", totalFriends);
+        stats.put("closeFriends", closeFriends);
+        stats.put("pendingRequests", pendingRequests);
+        
+        return stats;
     }
     
     public void addFriend(Long userId, String friendEmail) {
