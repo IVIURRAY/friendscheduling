@@ -2,10 +2,11 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "ls -la && ls -la gradle/wrapper/ && chmod +x ./gradlew && ./gradlew --version && ./gradlew clean build -x test --no-daemon --stacktrace && ls -la build/libs/"
+    "buildCommand": "cd backend && ls -la && ls -la gradle/wrapper/ && chmod +x ./gradlew && ./gradlew --version && ./gradlew clean build -x test --no-daemon --stacktrace && ls -la build/libs/",
+    "watchPatterns": ["backend/**"]
   },
   "deploy": {
-    "startCommand": "java -Dserver.port=$PORT -jar build/libs/friendscheduler-0.0.1-SNAPSHOT.jar",
+    "startCommand": "cd backend && java -Dserver.port=$PORT -jar build/libs/friendscheduler-0.0.1-SNAPSHOT.jar",
     "healthcheckPath": "/actuator/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
