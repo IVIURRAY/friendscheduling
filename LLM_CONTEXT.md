@@ -82,10 +82,10 @@ friendscheduling/
 ## 🔑 Key Implementation Details
 
 ### Authentication Architecture
-- **Google OAuth 2.0**: Only authentication method (no username/password)
-- **Session-based**: Uses Spring Security OAuth2 sessions (no JWT tokens)
-- **Google Calendar Integration**: Seamless access to user's calendar data
-- **Profile Pictures**: Automatically fetched from Google account
+- **OAuth 2.0 Providers**: Google OAuth 2.0 and Apple Sign-In (no username/password)
+- **Session-based**: Uses Spring Security OAuth2 sessions (no JWT tokens)  
+- **Google Calendar Integration**: Seamless access to user's calendar data (Google users only)
+- **Profile Pictures**: Automatically fetched from Google account (Google users only)
 - **Secure Storage**: OAuth secrets stored in .env file (excluded from git)
 
 ### Data Management Philosophy
@@ -118,7 +118,9 @@ GET  /api/auth/profile/{id}   # Get user profile
 
 OAuth Flow:
 GET  /oauth2/authorization/google  # Initiate Google OAuth
-GET  /login/oauth2/code/google     # OAuth callback
+GET  /oauth2/authorization/apple   # Initiate Apple OAuth
+GET  /login/oauth2/code/google     # Google OAuth callback
+GET  /login/oauth2/code/apple      # Apple OAuth callback
 GET  /logout                       # Logout
 
 Google Calendar:
@@ -148,18 +150,37 @@ GET /actuator/health                          # Application health
 # .env file (not committed to git)
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+APPLE_CLIENT_ID=your-apple-client-id
+APPLE_CLIENT_SECRET=your-apple-client-secret
 
 # .env.example file (template for new developers)
 GOOGLE_CLIENT_ID=your-google-client-id-here
 GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+APPLE_CLIENT_ID=your-apple-client-id-here
+APPLE_CLIENT_SECRET=your-apple-client-secret-here
 ```
 
-### Google OAuth Setup Requirements
+### OAuth Setup Requirements
+
+#### Google OAuth Setup
 1. **Google Cloud Console**: Create OAuth 2.0 credentials
 2. **Authorized JavaScript origins**: `http://localhost:19006`
 3. **Authorized redirect URIs**: `http://localhost:8080/login/oauth2/code/google`
 4. **APIs enabled**: Google Calendar API, Google+ API
 5. **Scopes**: `openid`, `profile`, `email`, `https://www.googleapis.com/auth/calendar.readonly`
+
+#### Apple OAuth Setup
+1. **Apple Developer Console**: Create an App ID and Services ID
+2. **App ID**: Register your app with Apple Developer Program
+3. **Services ID**: Create a Services ID for Sign in with Apple
+4. **Domain and Subdomain**: Configure `localhost` for development
+5. **Return URLs**: `http://localhost:8080/login/oauth2/code/apple`
+6. **Scopes**: `openid`, `name`, `email`
+7. **Client Secret**: Apple requires JWT-based client secret generation
+   - Generate a private key in Apple Developer Console
+   - Create a JWT token signed with the private key
+   - Use the JWT as the client secret value
+   - **Note**: Current implementation uses pre-generated client secret for simplicity
 
 ### Frontend State Management
 - **AuthContext**: Manages OAuth authentication state and user profile
@@ -321,9 +342,9 @@ make clean     # Clean up containers
 ## 🎯 Current State & Known Issues
 
 ### Working Features
-- ✅ Google OAuth 2.0 authentication (complete replacement of traditional login)
-- ✅ Google Calendar API integration with event display
-- ✅ User profile with Google profile picture and info
+- ✅ Multi-provider OAuth 2.0 authentication (Google and Apple)
+- ✅ Google Calendar API integration with event display (Google users only)
+- ✅ User profile with provider-specific profile picture and info
 - ✅ Session-based authentication (no JWT)
 - ✅ Environment variable configuration for secrets
 - ✅ Friend management (add, remove, mark close)
@@ -336,12 +357,21 @@ make clean     # Clean up containers
 - ✅ Automated browser opening
 
 ### Authentication Flow
+
+#### Google OAuth Flow
 1. User clicks "Continue with Google" → Redirects to Google OAuth
 2. User authorizes app → Google redirects back with authorization code
 3. Spring Security exchanges code for tokens → Creates authenticated session
 4. User profile populated from Google → Profile picture and info displayed
 5. Google Calendar access → Events displayed in calendar view
 6. Session maintained → No need for token refresh handling
+
+#### Apple OAuth Flow
+1. User clicks "Continue with Apple" → Redirects to Apple OAuth
+2. User authorizes app → Apple redirects back with authorization code
+3. Spring Security exchanges code for tokens → Creates authenticated session
+4. User profile populated from Apple → Name and email displayed (no profile picture)
+5. Session maintained → No need for token refresh handling
 
 ### Google Integration Features
 - **Profile Data**: Name, email, profile picture from Google account

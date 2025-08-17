@@ -1,5 +1,7 @@
 package com.example.demo.config;
 
+import com.example.demo.service.AppleJwtService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -16,17 +18,14 @@ import java.util.List;
 @Configuration
 public class AppleOAuthConfig {
 
+    @Autowired
+    private AppleJwtService appleJwtService;
+
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
 
     @Value("${spring.security.oauth2.client.registration.google.client-secret}")
     private String googleClientSecret;
-
-    @Value("${APPLE_CLIENT_ID:}")
-    private String appleClientId;
-
-    @Value("${APPLE_CLIENT_SECRET:}")
-    private String appleClientSecret;
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
@@ -36,8 +35,7 @@ public class AppleOAuthConfig {
         registrations.add(googleClientRegistration());
         
         // Only add Apple if credentials are provided
-        if (appleClientId != null && !appleClientId.trim().isEmpty() && 
-            appleClientSecret != null && !appleClientSecret.trim().isEmpty()) {
+        if (appleJwtService.isAppleConfigured()) {
             registrations.add(appleClientRegistration());
         }
         
@@ -59,9 +57,10 @@ public class AppleOAuthConfig {
     }
 
     private ClientRegistration appleClientRegistration() {
+        String clientSecret = appleJwtService.generateClientSecret();
         return ClientRegistration.withRegistrationId("apple")
-                .clientId(appleClientId)
-                .clientSecret(appleClientSecret)
+                .clientId(appleJwtService.getClientId())
+                .clientSecret(clientSecret)
                 .scope("openid", "name", "email")
                 .authorizationUri("https://appleid.apple.com/auth/authorize")
                 .tokenUri("https://appleid.apple.com/auth/token")
