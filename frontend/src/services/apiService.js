@@ -29,6 +29,7 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: this.getHeaders(),
+      credentials: 'include', // Include cookies for authentication
       ...options,
     };
 
