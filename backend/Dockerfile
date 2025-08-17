@@ -1,32 +1,51 @@
-# Use Eclipse Temurin JDK 21 as base image (more reliable than OpenJDK)
-FROM eclipse-temurin:21-jdk
+# Multi-stage build for production deployment
+FROM eclipse-temurin:21-jdk AS builder
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
 WORKDIR /app
 
-# Copy the Gradle wrapper files
+# Copy Gradle wrapper and build files
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 
-# Make gradlew executable and download wrapper if needed
+# Make gradlew executable and test it
 RUN chmod +x ./gradlew && ./gradlew --version
 
-# Download dependencies (this layer will be cached if dependencies don't change)
+# Download dependencies (cached layer)
 RUN ./gradlew dependencies --no-daemon
 
 # Copy source code
 COPY src src
 
 # Build the application
-RUN ./gradlew build -x test --no-daemon
+RUN ./gradlew clean build -x test --no-daemon && \
+    ls -la build/libs/
 
-# Expose port 8080
+# Production stage - smaller runtime image
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy the built JAR from builder stage
+COPY --from=builder /app/build/libs/demo-0.0.1-SNAPSHOT.jar app.jar
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --gid 1001 appuser && \
+    chown appuser:appgroup app.jar
+
+USER appuser
+
+# Expose port (Railway will override with $PORT)
 EXPOSE 8080
 
-# Run the application
-CMD ["./gradlew", "bootRun", "--no-daemon"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
+
+# Run the application with dynamic port support
+CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar app.jar"]

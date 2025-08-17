@@ -1,12 +1,10 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "cd backend && ls -la && ls -la gradle/wrapper/ && chmod +x ./gradlew && ./gradlew --version && ./gradlew clean build -x test --no-daemon --stacktrace && ls -la build/libs/",
-    "watchPatterns": ["backend/**"]
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "backend/Dockerfile"
   },
   "deploy": {
-    "startCommand": "cd backend && java -Dserver.port=$PORT -jar build/libs/friendscheduler-0.0.1-SNAPSHOT.jar",
     "healthcheckPath": "/actuator/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
@@ -15,8 +13,6 @@
   "environments": {
     "production": {
       "variables": {
-        "JAVA_VERSION": "21",
-        "GRADLE_OPTS": "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=1",
         "SPRING_PROFILES_ACTIVE": "production"
       }
     }
