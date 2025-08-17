@@ -70,12 +70,27 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:19006", 
-            "http://localhost:3000",
-            "https://localhost:19006",
-            "https://localhost:3000"
-        ));
+        
+        String frontendUrl = System.getenv("FRONTEND_URL");
+        if (frontendUrl != null && !frontendUrl.trim().isEmpty()) {
+            configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:19006", 
+                "http://localhost:3000",
+                "https://localhost:19006",
+                "https://localhost:3000",
+                frontendUrl,
+                "https://friendscheduling-production.up.railway.app"
+            ));
+        } else {
+            configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:19006", 
+                "http://localhost:3000",
+                "https://localhost:19006",
+                "https://localhost:3000",
+                "https://friendscheduling-production.up.railway.app"
+            ));
+        }
+        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
