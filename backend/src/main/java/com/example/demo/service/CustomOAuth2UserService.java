@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -21,14 +22,39 @@ public class CustomOAuth2UserService extends OidcUserService {
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         OidcUser oidcUser = super.loadUser(userRequest);
         
-        String email = oidcUser.getEmail();
-        String name = oidcUser.getFullName();
-        String oauthId = oidcUser.getSubject();
         String provider = userRequest.getClientRegistration().getRegistrationId();
-        String profilePictureUrl = oidcUser.getAttribute("picture");
-        
+        String oauthId = oidcUser.getSubject();
         String accessToken = userRequest.getAccessToken().getTokenValue();
         String refreshToken = null;
+        
+        String email;
+        String name;
+        String profilePictureUrl;
+        
+        if ("apple".equals(provider)) {
+            email = oidcUser.getEmail();
+            Object nameObject = oidcUser.getAttribute("name");
+            if (nameObject instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, String> nameMap = (Map<String, String>) nameObject;
+                String firstName = nameMap.get("firstName");
+                String lastName = nameMap.get("lastName");
+                name = (firstName != null ? firstName : "") + 
+                       (lastName != null ? " " + lastName : "");
+                name = name.trim();
+                if (name.isEmpty()) {
+                    name = email != null ? email.split("@")[0] : "Apple User";
+                }
+            } else {
+                name = nameObject != null ? nameObject.toString() : 
+                       (email != null ? email.split("@")[0] : "Apple User");
+            }
+            profilePictureUrl = null;
+        } else {
+            email = oidcUser.getEmail();
+            name = oidcUser.getFullName();
+            profilePictureUrl = oidcUser.getAttribute("picture");
+        }
 
         Optional<User> existingUser = userRepository.findByEmail(email);
         User user;
@@ -39,7 +65,12 @@ public class CustomOAuth2UserService extends OidcUserService {
             user.setOauthId(oauthId);
             user.setAccessToken(accessToken);
             user.setRefreshToken(refreshToken);
-            user.setProfilePictureUrl(profilePictureUrl);
+            if (profilePictureUrl != null) {
+                user.setProfilePictureUrl(profilePictureUrl);
+            }
+            if (name != null && !name.isEmpty()) {
+                user.setName(name);
+            }
         } else {
             user = new User();
             user.setName(name);

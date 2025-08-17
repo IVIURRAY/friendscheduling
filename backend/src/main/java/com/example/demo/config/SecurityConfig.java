@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/auth/oauth2/**").permitAll()
+                .requestMatchers("/api/auth/providers").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
@@ -58,14 +59,23 @@ public class SecurityConfig {
     @Bean
     public AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler() {
         return (request, response, authentication) -> {
-            response.sendRedirect("http://localhost:19006");
+            String redirectUrl = System.getenv("FRONTEND_URL");
+            if (redirectUrl == null || redirectUrl.trim().isEmpty()) {
+                redirectUrl = "http://localhost:19006";
+            }
+            response.sendRedirect(redirectUrl);
         };
     }
     
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:19006", "http://localhost:3000"));
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:19006", 
+            "http://localhost:3000",
+            "https://localhost:19006",
+            "https://localhost:3000"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
