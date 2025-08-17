@@ -5,7 +5,7 @@ JAVA_VERSION = "21"
 nixPkgs = ["openjdk21", "curl"]
 
 [phases.build]
-cmd = "cd backend && chmod +x ./gradlew && ./gradlew clean build -x test --no-daemon"
+cmd = "chmod +x ./build-backend.sh && ./build-backend.sh"
 
 [start]
 cmd = "cd backend && java -Dserver.port=$PORT -jar build/libs/demo-0.0.1-SNAPSHOT.jar"
