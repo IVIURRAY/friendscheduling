@@ -2,16 +2,17 @@
 
 ## 🎯 Project Overview
 
-**Friend Scheduler App** is a full-stack application for scheduling meetings with friends, built with Spring Boot backend and React Native frontend. The app uses **Google OAuth authentication** and integrates with **Google Calendar API** to provide seamless calendar access and meeting scheduling.
+**Friend Scheduler App** is a full-stack application for scheduling meetings with friends, built with Spring Boot backend and React Native frontend. The app uses **multi-provider OAuth authentication** (Google and Apple) and integrates with **Google Calendar API** to provide seamless calendar access and meeting scheduling. **Production deployment** is available on Railway for Apple OAuth support.
 
 ## 🏗️ Architecture
 
 ### Backend (Spring Boot 3.5.4 + Java 21)
 - **Database**: H2 in-memory database (starts empty, no hardcoded data)
-- **Port**: 8080
-- **Authentication**: Google OAuth 2.0 (session-based, no JWT)
-- **Key Technologies**: Spring Boot, Spring Security OAuth2 Client, JPA/Hibernate, Google Calendar API
+- **Port**: 8080 (local), Railway deployed: https://friendscheduling-production.up.railway.app
+- **Authentication**: Multi-provider OAuth 2.0 (Google + Apple, session-based, no JWT)
+- **Key Technologies**: Spring Boot, Spring Security OAuth2 Client, JPA/Hibernate, Google Calendar API, nimbus-jose-jwt
 - **Build Tool**: Gradle (build.gradle.kts)
+- **Deployment**: Railway.app with nixpacks and custom build script
 
 ### Frontend (React Native + Expo)
 - **Framework**: React Native with Expo for cross-platform support
@@ -21,24 +22,30 @@
 - **Build Tool**: npm/yarn
 
 ### Infrastructure
-- **Containerization**: Docker + Docker Compose
+- **Local Development**: Docker + Docker Compose
+- **Production Deployment**: Railway.app platform
 - **Development Tools**: Makefile with convenient commands
 - **Health Monitoring**: Spring Boot Actuator
-- **Environment Variables**: .env file for secrets (not committed to git)
+- **Environment Variables**: .env file for local secrets, Railway environment variables for production
 
 ## 📁 Critical File Structure
 
 ```
 friendscheduling/
-├── .env                                # Environment variables (Google OAuth secrets)
+├── .env                                # Environment variables (OAuth secrets for local development)
 ├── .env.example                        # Environment variables template
+├── railway.json                        # Railway deployment configuration
+├── nixpacks.toml                       # Railway nixpacks configuration
+├── build-backend.sh                    # Custom Railway build script
+├── Dockerfile.backend                  # Docker configuration for Railway deployment
 ├── backend/
 │   ├── src/main/java/com/example/demo/
 │   │   ├── config/
 │   │   │   ├── DataInitializer.java      # Database initialization (EMPTY - no sample data)
-│   │   │   └── SecurityConfig.java       # OAuth2 security configuration
+│   │   │   ├── SecurityConfig.java       # OAuth2 security configuration
+│   │   │   └── AppleOAuthConfig.java     # Apple OAuth configuration with conditional registration
 │   │   ├── controller/
-│   │   │   ├── AuthController.java       # OAuth user endpoints only
+│   │   │   ├── AuthController.java       # OAuth user endpoints + provider detection
 │   │   │   ├── CalendarController.java   # Google Calendar integration
 │   │   │   ├── FriendsController.java    # Friend management + dashboard stats
 │   │   │   └── MeetingsController.java   # Meeting CRUD operations
@@ -47,17 +54,18 @@ friendscheduling/
 │   │   │   └── User.java                 # OAuth-enabled user entity (no password field)
 │   │   ├── repository/                   # Data repositories
 │   │   └── service/
-│   │       ├── CustomOAuth2UserService.java  # OAuth user management
-│   │       ├── GoogleCalendarService.java    # Google Calendar API integration
+│   │       ├── CustomOAuth2UserService.java  # Multi-provider OAuth user management
+│   │       ├── GoogleCalendarService.java    # Google Calendar API integration  
+│   │       ├── AppleJwtService.java           # Apple JWT client secret generation
 │   │       └── UserService.java              # User business logic (no password methods)
 │   ├── src/main/resources/
 │   │   └── application.properties        # OAuth & Calendar API configuration
-│   ├── build.gradle.kts                  # OAuth & Google API dependencies
+│   ├── build.gradle.kts                  # OAuth & Google API + nimbus-jose-jwt dependencies
 │   └── Dockerfile                        # Eclipse Temurin JDK 21
 ├── frontend/
 │   ├── src/
 │   │   ├── contexts/
-│   │   │   ├── AuthContext.js            # Google OAuth authentication state
+│   │   │   ├── AuthContext.js            # Multi-provider OAuth authentication state
 │   │   │   └── FriendsContext.js         # Friends data management
 │   │   ├── design/
 │   │   │   └── DesignSystem.js           # UI design system
@@ -67,7 +75,7 @@ friendscheduling/
 │   │   │   ├── CalendarScreen.js         # Calendar view
 │   │   │   ├── GoogleCalendarScreen.js   # Google Calendar events display
 │   │   │   ├── ScheduleScreen.js         # Meeting scheduling
-│   │   │   └── LoginScreen.js            # Google OAuth login only
+│   │   │   └── LoginScreen.js            # Multi-provider OAuth login (Google + Apple)
 │   │   └── services/
 │   │       └── apiService.js             # API communication (OAuth-based)
 │   ├── package.json                      # Dependencies
@@ -146,26 +154,45 @@ GET /actuator/health                          # Application health
 ```
 
 ### Environment Configuration
+
+#### Local Development (.env file)
 ```bash
 # .env file (not committed to git)
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 APPLE_CLIENT_ID=your-apple-client-id
-APPLE_CLIENT_SECRET=your-apple-client-secret
+APPLE_TEAM_ID=your-apple-team-id
+APPLE_KEY_ID=your-apple-key-id
+APPLE_PRIVATE_KEY=your-apple-private-key
 
 # .env.example file (template for new developers)
 GOOGLE_CLIENT_ID=your-google-client-id-here
 GOOGLE_CLIENT_SECRET=your-google-client-secret-here
 APPLE_CLIENT_ID=your-apple-client-id-here
-APPLE_CLIENT_SECRET=your-apple-client-secret-here
+APPLE_TEAM_ID=your-apple-team-id-here
+APPLE_KEY_ID=your-apple-key-id-here
+APPLE_PRIVATE_KEY=your-apple-private-key-here
 ```
+
+#### Railway Production Environment
+Railway environment variables are set via `railway variables --set` command:
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OAuth credentials
+- `APPLE_CLIENT_ID` - Apple Service ID
+- `APPLE_TEAM_ID` - Apple Developer Team ID
+- `APPLE_KEY_ID` - Apple Private Key ID
+- `APPLE_PRIVATE_KEY` - Apple private key content for JWT generation
+- `FRONTEND_URL` - Frontend URL for CORS (http://localhost:19006 for local development)
 
 ### OAuth Setup Requirements
 
 #### Google OAuth Setup
 1. **Google Cloud Console**: Create OAuth 2.0 credentials
-2. **Authorized JavaScript origins**: `http://localhost:19006`
-3. **Authorized redirect URIs**: `http://localhost:8080/login/oauth2/code/google`
+2. **Authorized JavaScript origins**: 
+   - Local: `http://localhost:19006`
+   - Production: `https://friendscheduling-production.up.railway.app`
+3. **Authorized redirect URIs**: 
+   - Local: `http://localhost:8080/login/oauth2/code/google`
+   - Production: `https://friendscheduling-production.up.railway.app/login/oauth2/code/google`
 4. **APIs enabled**: Google Calendar API, Google+ API
 5. **Scopes**: `openid`, `profile`, `email`, `https://www.googleapis.com/auth/calendar.readonly`
 
@@ -173,14 +200,19 @@ APPLE_CLIENT_SECRET=your-apple-client-secret-here
 1. **Apple Developer Console**: Create an App ID and Services ID
 2. **App ID**: Register your app with Apple Developer Program
 3. **Services ID**: Create a Services ID for Sign in with Apple
-4. **Domain and Subdomain**: Configure `localhost` for development
-5. **Return URLs**: `http://localhost:8080/login/oauth2/code/apple`
+4. **Domain and Subdomain**: 
+   - Local: `localhost` (may not work - Apple rejects localhost)
+   - Production: `friendscheduling-production.up.railway.app`
+5. **Return URLs**: 
+   - Local: `http://localhost:8080/login/oauth2/code/apple`
+   - Production: `https://friendscheduling-production.up.railway.app/login/oauth2/code/apple`
 6. **Scopes**: `openid`, `name`, `email`
-7. **Client Secret**: Apple requires JWT-based client secret generation
-   - Generate a private key in Apple Developer Console
-   - Create a JWT token signed with the private key
-   - Use the JWT as the client secret value
-   - **Note**: Current implementation uses pre-generated client secret for simplicity
+7. **JWT-based Client Secret**: Apple requires JWT generation for client secret
+   - Generate a private key (.p8 file) in Apple Developer Console
+   - Note the Key ID and Team ID
+   - Use `AppleJwtService` to generate JWT client secret from private key
+   - JWT contains: issuer (Team ID), audience (Apple), subject (Client ID), expiration
+   - **Current implementation**: Dynamic JWT generation using nimbus-jose-jwt library
 
 ### Frontend State Management
 - **AuthContext**: Manages OAuth authentication state and user profile
@@ -189,6 +221,40 @@ APPLE_CLIENT_SECRET=your-apple-client-secret-here
 - **AsyncStorage**: Minimal local data persistence
 
 ## 🚀 Development Workflow
+
+### Railway Deployment
+
+The backend is deployed on Railway.app for Apple OAuth support (Apple rejects localhost domains).
+
+#### Railway Configuration Files
+- **`railway.json`**: Railway deployment configuration using nixpacks
+- **`nixpacks.toml`**: Nixpacks build configuration (Java 21, custom build command)
+- **`build-backend.sh`**: Custom build script for Railway deployment
+- **`Dockerfile.backend`**: Docker configuration (used for local Railway builds)
+
+#### Railway Deployment Process
+1. **Link project**: `railway link` (connects to Railway project)
+2. **Set environment variables**: `railway variables --set KEY=value`
+3. **Deploy**: Automatic deployment on git push or manual `railway deploy`
+4. **Monitor**: `railway status`, `railway domain`, Railway dashboard
+
+#### Key Railway Environment Variables
+- Apple OAuth: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`
+- Google OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`  
+- CORS: `FRONTEND_URL=http://localhost:19006`
+
+#### Railway Build Process
+1. Uses nixpacks with Java 21
+2. Runs custom `build-backend.sh` script
+3. Navigates to backend directory
+4. Checks gradle wrapper files (gradle-wrapper.jar must be committed)
+5. Builds with `./gradlew clean build -x test --no-daemon`
+6. Starts with `java -Dserver.port=$PORT -jar build/libs/demo-0.0.1-SNAPSHOT.jar`
+
+#### Railway Domain
+- **Production URL**: https://friendscheduling-production.up.railway.app
+- **Health check**: https://friendscheduling-production.up.railway.app/actuator/health
+- **Providers endpoint**: https://friendscheduling-production.up.railway.app/api/auth/providers
 
 ### Quick Start Commands
 ```bash

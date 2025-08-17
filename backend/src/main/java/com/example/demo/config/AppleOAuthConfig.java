@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class AppleOAuthConfig {
@@ -69,6 +70,7 @@ public class AppleOAuthConfig {
                 .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                .configurationMetadata(Map.of("response_mode", "form_post"))
                 .build();
     }
 }
