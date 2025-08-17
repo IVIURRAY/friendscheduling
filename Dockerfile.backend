@@ -3,11 +3,11 @@ FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /app
 
-# Copy Gradle wrapper and build files
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
+# Copy Gradle wrapper and build files from backend directory
+COPY backend/gradlew .
+COPY backend/gradle gradle
+COPY backend/build.gradle.kts .
+COPY backend/settings.gradle.kts .
 
 # Make gradlew executable and test it
 RUN chmod +x ./gradlew && ./gradlew --version
@@ -15,8 +15,8 @@ RUN chmod +x ./gradlew && ./gradlew --version
 # Download dependencies (cached layer)
 RUN ./gradlew dependencies --no-daemon
 
-# Copy source code
-COPY src src
+# Copy source code from backend directory
+COPY backend/src src
 
 # Build the application
 RUN ./gradlew clean build -x test --no-daemon && \
