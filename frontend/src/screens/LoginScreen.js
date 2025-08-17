@@ -2,41 +2,23 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, COMMON_STYLES } from '../design/DesignSystem';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../design/DesignSystem';
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { loginWithGoogle } = useAuth();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
+  const handleGoogleLogin = () => {
     setIsLoading(true);
-    const result = await login(email, password);
-    setIsLoading(false);
-
-    if (!result.success) {
-      Alert.alert('Login Failed', result.error);
-    }
+    loginWithGoogle();
   };
 
   return (
@@ -53,95 +35,39 @@ const LoginScreen = () => {
                 <Ionicons name="people" size={32} color={COLORS.primary} />
               </View>
             </View>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue to FriendScheduler</Text>
+            <Text style={styles.title}>Welcome to FriendScheduler</Text>
+            <Text style={styles.subtitle}>Connect your Google Calendar to get started</Text>
           </View>
 
-          {/* Form Section */}
-          <View style={styles.formSection}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email Address</Text>
-              <View style={[styles.inputWrapper, emailFocused && styles.inputWrapperFocused]}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={20} 
-                  color={emailFocused ? COLORS.primary : COLORS.textLight} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  value={email}
-                  onChangeText={setEmail}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={[styles.inputWrapper, passwordFocused && styles.inputWrapperFocused]}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={20} 
-                  color={passwordFocused ? COLORS.primary : COLORS.textLight} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  style={styles.passwordToggle}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons 
-                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                    size={20} 
-                    color={COLORS.textLight} 
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
-
+          {/* OAuth Section */}
+          <View style={styles.oauthSection}>
             <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-              onPress={handleLogin}
+              style={[styles.googleButton, isLoading && styles.googleButtonDisabled]}
+              onPress={handleGoogleLogin}
               disabled={isLoading}
             >
               {isLoading ? (
                 <View style={styles.loadingContainer}>
                   <Ionicons name="reload" size={20} color="white" style={styles.loadingIcon} />
-                  <Text style={styles.loginButtonText}>Signing In...</Text>
+                  <Text style={styles.googleButtonText}>Connecting...</Text>
                 </View>
               ) : (
                 <View style={styles.buttonContent}>
-                  <Ionicons name="log-in-outline" size={20} color="white" style={styles.buttonIcon} />
-                  <Text style={styles.loginButtonText}>Sign In</Text>
+                  <Ionicons name="logo-google" size={20} color="white" style={styles.buttonIcon} />
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
                 </View>
               )}
             </TouchableOpacity>
+            
+            <Text style={styles.oauthNote}>
+              We'll access your Google Calendar to help you schedule meetings with friends
+            </Text>
           </View>
 
           {/* Footer Section */}
           <View style={styles.footerSection}>
             <Text style={styles.footerText}>
-              Don't have an account?{' '}
-              <Text style={styles.footerLink}>Sign Up</Text>
+              By continuing, you agree to our Terms of Service and Privacy Policy
             </Text>
           </View>
         </View>
@@ -191,61 +117,25 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
 
-  // Form Section
-  formSection: {
+  // OAuth Section
+  oauthSection: {
     marginBottom: SPACING.xl,
   },
-  inputContainer: {
-    marginBottom: SPACING.lg,
-  },
-  inputLabel: {
-    ...TYPOGRAPHY.label,
-    marginBottom: SPACING.sm,
-    color: COLORS.text,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    ...SHADOWS.sm,
-  },
-  inputWrapperFocused: {
-    borderColor: COLORS.primary,
-    borderWidth: 2,
-    ...SHADOWS.md,
-  },
-  inputIcon: {
-    marginRight: SPACING.sm,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    ...TYPOGRAPHY.body,
-  },
-  passwordToggle: {
-    padding: SPACING.xs,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: SPACING.lg,
-  },
-  forgotPasswordText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  loginButton: {
-    backgroundColor: COLORS.primary,
+  googleButton: {
+    backgroundColor: '#4285F4',
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
     ...SHADOWS.md,
   },
-  loginButtonDisabled: {
+  googleButtonDisabled: {
     backgroundColor: COLORS.textLight,
+  },
+  oauthNote: {
+    ...TYPOGRAPHY.bodySmall,
+    textAlign: 'center',
+    color: COLORS.textLight,
+    marginTop: SPACING.sm,
   },
   buttonContent: {
     flexDirection: 'row',
@@ -263,7 +153,7 @@ const styles = StyleSheet.create({
   loadingIcon: {
     marginRight: SPACING.sm,
   },
-  loginButtonText: {
+  googleButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.textInverse,
   },

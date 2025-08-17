@@ -22,9 +22,21 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
     
-    @NotBlank
-    @Column(nullable = false)
-    private String password;
+    
+    @Column(name = "oauth_provider")
+    private String oauthProvider;
+    
+    @Column(name = "oauth_id")
+    private String oauthId;
+    
+    @Column(name = "access_token")
+    private String accessToken;
+    
+    @Column(name = "refresh_token")
+    private String refreshToken;
+    
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -46,10 +58,9 @@ public class User {
     // Constructors
     public User() {}
     
-    public User(String name, String email, String password) {
+    public User(String name, String email) {
         this.name = name;
         this.email = email;
-        this.password = password;
     }
     
     // Getters and Setters
@@ -77,13 +88,6 @@ public class User {
         this.email = email;
     }
     
-    public String getPassword() {
-        return password;
-    }
-    
-    public void setPassword(String password) {
-        this.password = password;
-    }
     
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -99,5 +103,45 @@ public class User {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public String getOauthProvider() {
+        return oauthProvider;
+    }
+    
+    public void setOauthProvider(String oauthProvider) {
+        this.oauthProvider = oauthProvider;
+    }
+    
+    public String getOauthId() {
+        return oauthId;
+    }
+    
+    public void setOauthId(String oauthId) {
+        this.oauthId = oauthId;
+    }
+    
+    public String getAccessToken() {
+        return accessToken;
+    }
+    
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+    
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+    
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+    
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+    
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }

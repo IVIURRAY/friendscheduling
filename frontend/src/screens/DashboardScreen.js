@@ -8,12 +8,15 @@ import {
   Modal,
   Switch,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, COMMON_STYLES } from '../design/DesignSystem';
 import { apiService } from '../services/apiService';
+import { useAuth } from '../contexts/AuthContext';
 
 const DashboardScreen = () => {
+  const { user, logout } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -26,38 +29,65 @@ const DashboardScreen = () => {
   });
   const [upcomingMeetings, setUpcomingMeetings] = useState([]);
   const [userProfile, setUserProfile] = useState({
-    name: 'Loading...',
-    email: 'loading@example.com',
-    joinDate: 'Loading...',
+    name: 'User',
+    email: 'user@example.com',
+    joinDate: 'Recently joined',
     totalFriends: 0,
     totalMeetings: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
+
+  // Update user profile when user data from AuthContext changes
+  useEffect(() => {
+    if (user) {
+      setUserProfile(prev => ({
+        ...prev,
+        name: user.name || 'User',
+        email: user.email || 'user@example.com',
+        joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long' 
+        }) : 'Recently joined',
+      }));
+    }
+  }, [user]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [dashboardStats, meetings, profile] = await Promise.all([
-        apiService.getDashboardStats(1), // Using user ID 1 for now
-        apiService.getUpcomingMeetings(1), // Using user ID 1 for now
-        apiService.getUserProfile(1), // Using user ID 1 for now
-      ]);
       
-      setStats(dashboardStats);
-      setUpcomingMeetings(meetings || []);
-      
-      // Update user profile with real data
-      setUserProfile({
-        name: profile.name || 'User',
-        email: profile.email || 'user@example.com',
-        joinDate: profile.joinDate || 'Unknown',
-        totalFriends: dashboardStats.totalFriends || 0,
-        totalMeetings: dashboardStats.upcomingMeetings || 0,
-      });
+      // Use user data from AuthContext
+      if (user && user.id) {
+        const [dashboardStats, meetings] = await Promise.all([
+          apiService.getDashboardStats(user.id),
+          apiService.getUpcomingMeetings(user.id),
+        ]);
+        
+        setStats(dashboardStats);
+        setUpcomingMeetings(meetings || []);
+        
+        // Update stats in user profile
+        setUserProfile(prev => ({
+          ...prev,
+          totalFriends: dashboardStats.totalFriends || 0,
+          totalMeetings: dashboardStats.upcomingMeetings || 0,
+        }));
+      } else {
+        // Set empty stats if no user
+        setStats({
+          totalFriends: 0,
+          closeFriends: 0,
+          upcomingMeetings: 0,
+          pendingRequests: 0,
+        });
+        setUpcomingMeetings([]);
+      }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       // Set empty state when API fails
@@ -230,13 +260,21 @@ const DashboardScreen = () => {
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.greeting}>Good morning!</Text>
-            <Text style={styles.userName}>{userProfile.name}</Text>
+            <Text style={styles.userName}>{user?.name || userProfile.name}</Text>
+            <Text style={styles.userEmail}>{user?.email || userProfile.email}</Text>
           </View>
           <TouchableOpacity 
             style={styles.profileButton}
             onPress={() => setShowProfileModal(true)}
           >
-            <Ionicons name="person-circle" size={40} color={COLORS.primary} />
+            {user?.profilePictureUrl ? (
+              <Image 
+                source={{ uri: user.profilePictureUrl }} 
+                style={styles.profileImage}
+              />
+            ) : (
+              <Ionicons name="person-circle" size={40} color={COLORS.primary} />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -312,7 +350,12 @@ const DashboardScreen = () => {
       </ScrollView>
 
       {/* Profile Modal */}
-      <Modal visible={showProfileModal} transparent animationType="slide">
+      <Modal 
+        visible={showProfileModal} 
+        transparent 
+        animationType="slide"
+        onRequestClose={() => setShowProfileModal(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
@@ -331,15 +374,22 @@ const DashboardScreen = () => {
                 <View style={styles.profileCard}>
                   <View style={styles.avatarContainer}>
                     <View style={styles.avatar}>
-                      <Ionicons name="person" size={40} color={COLORS.primary} />
+                      {user?.profilePictureUrl ? (
+                        <Image 
+                          source={{ uri: user.profilePictureUrl }} 
+                          style={styles.avatarImage}
+                        />
+                      ) : (
+                        <Ionicons name="person" size={40} color={COLORS.primary} />
+                      )}
                     </View>
                     <TouchableOpacity style={styles.editAvatarButton}>
                       <Ionicons name="camera" size={16} color="white" />
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.userName}>{userProfile.name}</Text>
-                  <Text style={styles.userEmail}>{userProfile.email}</Text>
-                  <Text style={styles.userJoinDate}>Member since {userProfile.joinDate}</Text>
+                  <Text style={styles.userName}>{user?.name || userProfile.name}</Text>
+                  <Text style={styles.userEmail}>{user?.email || userProfile.email}</Text>
+                  <Text style={styles.userJoinDate}>Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : userProfile.joinDate}</Text>
                 </View>
               </View>
 
@@ -396,8 +446,21 @@ const DashboardScreen = () => {
                 <TouchableOpacity
                   style={styles.logoutButton}
                   onPress={() => {
-                    setShowProfileModal(false);
-                    Alert.alert('Logout', 'Are you sure you want to logout?');
+                    Alert.alert(
+                      'Logout', 
+                      'Are you sure you want to logout?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { 
+                          text: 'Logout', 
+                          style: 'destructive',
+                          onPress: () => {
+                            setShowProfileModal(false);
+                            logout();
+                          }
+                        }
+                      ]
+                    );
                   }}
                 >
                   <Ionicons name="log-out-outline" size={20} color={COLORS.error} style={styles.logoutIcon} />
@@ -453,6 +516,11 @@ const styles = StyleSheet.create({
   },
   userName: {
     ...TYPOGRAPHY.h2,
+    marginBottom: SPACING.xs,
+  },
+  userEmail: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textLight,
   },
   profileButton: {
     padding: SPACING.xs,
@@ -860,6 +928,18 @@ const styles = StyleSheet.create({
   logoutText: {
     ...TYPOGRAPHY.button,
     color: COLORS.error,
+  },
+  
+  // Profile Images
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
 });
 

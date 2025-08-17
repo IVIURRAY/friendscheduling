@@ -6,14 +6,18 @@ public class UserDto {
     private Long id;
     private String name;
     private String email;
+    private String oauthProvider;
+    private String profilePictureUrl;
     private LocalDateTime createdAt;
     
     public UserDto() {}
     
-    public UserDto(Long id, String name, String email, LocalDateTime createdAt) {
+    public UserDto(Long id, String name, String email, String oauthProvider, String profilePictureUrl, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
         this.email = email;
+        this.oauthProvider = oauthProvider;
+        this.profilePictureUrl = profilePictureUrl;
         this.createdAt = createdAt;
     }
     
@@ -48,5 +52,21 @@ public class UserDto {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    
+    public String getOauthProvider() {
+        return oauthProvider;
+    }
+    
+    public void setOauthProvider(String oauthProvider) {
+        this.oauthProvider = oauthProvider;
+    }
+    
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+    
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }

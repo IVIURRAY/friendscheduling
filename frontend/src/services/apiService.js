@@ -46,39 +46,16 @@ class ApiService {
     }
   }
 
-  // Login method
-  async login(email, password) {
-    const response = await this.makeRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
+
+
+
+  // Get current authenticated user
+  async getCurrentUser() {
+    return await this.makeRequest('/auth/user', {
+      credentials: 'include'
     });
-    
-    if (response.token) {
-      this.setToken(response.token);
-    }
-    
-    return response;
   }
 
-  // Register method
-  async register(name, email, password) {
-    const response = await this.makeRequest('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ name, email, password }),
-    });
-    
-    if (response.token) {
-      this.setToken(response.token);
-    }
-    
-    return response;
-  }
-
-  // Validate token method
-  async validateToken(token) {
-    this.setToken(token);
-    return await this.makeRequest('/auth/validate');
-  }
 
   // Get friends list
   async getFriends(userId = 1) {
@@ -207,6 +184,24 @@ class ApiService {
         pendingRequests: 0,
       };
     }
+  }
+
+  // Calendar API methods
+  async getUpcomingCalendarEvents(maxResults = 10) {
+    return await this.makeRequest(`/calendar/events/upcoming?maxResults=${maxResults}`, {
+      credentials: 'include'
+    });
+  }
+
+  async getCalendarEventsByDateRange(startDate, endDate) {
+    const params = new URLSearchParams({
+      startDate: startDate,
+      endDate: endDate
+    });
+    
+    return await this.makeRequest(`/calendar/events/range?${params}`, {
+      credentials: 'include'
+    });
   }
 }
 

@@ -24,84 +24,41 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
-      const token = await AsyncStorage.getItem('authToken');
-      
-      if (token) {
-        const userData = await apiService.validateToken(token);
-        setUser(userData.user);
+      const userData = await apiService.getCurrentUser();
+      if (userData && userData.id) {
+        setUser(userData);
         setIsAuthenticated(true);
-        apiService.setToken(token);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      await logout();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const login = async (email, password) => {
-    try {
-      setIsLoading(true);
-      const response = await apiService.login(email, password);
-      
-      if (response.token) {
-        await AsyncStorage.setItem('authToken', response.token);
-        setUser(response.user);
-        setIsAuthenticated(true);
-        apiService.setToken(response.token);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Login failed' };
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
-      return { success: false, error: error.message || 'Login failed' };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (name, email, password) => {
-    try {
-      setIsLoading(true);
-      const response = await apiService.register(name, email, password);
-      
-      if (response.token) {
-        await AsyncStorage.setItem('authToken', response.token);
-        setUser(response.user);
-        setIsAuthenticated(true);
-        apiService.setToken(response.token);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Registration failed' };
-      }
-    } catch (error) {
-      console.error('Registration failed:', error);
-      return { success: false, error: error.message || 'Registration failed' };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await AsyncStorage.removeItem('authToken');
       setUser(null);
       setIsAuthenticated(false);
-      apiService.setToken(null);
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const loginWithGoogle = () => {
+    const authUrl = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = authUrl;
+  };
+
+  const logout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+    window.location.href = 'http://localhost:8080/logout';
   };
 
   const value = {
     user,
     isAuthenticated,
     isLoading,
-    login,
-    register,
+    loginWithGoogle,
     logout,
+    checkAuthStatus
   };
 
   return (
