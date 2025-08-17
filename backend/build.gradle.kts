@@ -28,6 +28,7 @@ dependencies {
 	implementation("com.google.api-client:google-api-client:2.2.0")
 	implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
 	implementation("com.google.apis:google-api-services-calendar:v3-rev20220715-2.0.0")
+	implementation("com.nimbusds:nimbus-jose-jwt:9.37.3")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

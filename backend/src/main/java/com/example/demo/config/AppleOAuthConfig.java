@@ -13,9 +13,7 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Configuration
 public class AppleOAuthConfig {
@@ -61,21 +59,17 @@ public class AppleOAuthConfig {
     private ClientRegistration appleClientRegistration() {
         String clientSecret = appleJwtService.generateClientSecret();
         
-        Map<String, Object> configurationMetadata = new HashMap<>();
-        configurationMetadata.put("response_mode", "form_post");
-        
         return ClientRegistration.withRegistrationId("apple")
                 .clientId(appleJwtService.getClientId())
                 .clientSecret(clientSecret)
                 .scope("openid", "name", "email")
-                .authorizationUri("https://appleid.apple.com/auth/authorize")
+                .authorizationUri("https://appleid.apple.com/auth/authorize?response_mode=form_post")
                 .tokenUri("https://appleid.apple.com/auth/token")
                 .jwkSetUri("https://appleid.apple.com/auth/keys")
                 .userNameAttributeName("sub")
                 .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-                .configurationMetadata(configurationMetadata)
                 .build();
     }
 }
