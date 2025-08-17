@@ -4,7 +4,7 @@ FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
 # Copy all backend files
-COPY backend/ .
+COPY . .
 
 # Make gradlew executable and build in one step to reduce layers
 RUN chmod +x ./gradlew && \
