@@ -1,7 +1,8 @@
 // API service for authentication and API calls
 class ApiService {
   constructor() {
-    this.baseURL = 'http://localhost:8080/api'; // Backend URL
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    this.baseURL = `${apiBaseUrl}/api`; // Backend URL
     this.token = null;
   }
 

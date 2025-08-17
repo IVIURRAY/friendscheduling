@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,16 @@ import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../design/D
 
 const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, loginWithApple, availableProviders } = useAuth();
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
     loginWithGoogle();
+  };
+
+  const handleAppleLogin = () => {
+    setIsLoading(true);
+    loginWithApple();
   };
 
   return (
@@ -36,7 +41,11 @@ const LoginScreen = () => {
               </View>
             </View>
             <Text style={styles.title}>Welcome to FriendScheduler</Text>
-            <Text style={styles.subtitle}>Connect your Google Calendar to get started</Text>
+            <Text style={styles.subtitle}>
+              {availableProviders.length > 1 
+                ? 'Choose your preferred sign-in method to get started'
+                : 'Sign in with Google to get started'}
+            </Text>
           </View>
 
           {/* OAuth Section */}
@@ -58,9 +67,29 @@ const LoginScreen = () => {
                 </View>
               )}
             </TouchableOpacity>
+
+            {availableProviders.includes('apple') && (
+              <TouchableOpacity
+                style={[styles.appleButton, isLoading && styles.appleButtonDisabled]}
+                onPress={handleAppleLogin}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <Ionicons name="reload" size={20} color="white" style={styles.loadingIcon} />
+                    <Text style={styles.appleButtonText}>Connecting...</Text>
+                  </View>
+                ) : (
+                  <View style={styles.buttonContent}>
+                    <Ionicons name="logo-apple" size={20} color="white" style={styles.buttonIcon} />
+                    <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
             
             <Text style={styles.oauthNote}>
-              We'll access your Google Calendar to help you schedule meetings with friends
+              We'll help you schedule meetings with friends securely
             </Text>
           </View>
 
@@ -130,6 +159,20 @@ const styles = StyleSheet.create({
   },
   googleButtonDisabled: {
     backgroundColor: COLORS.textLight,
+  },
+  appleButton: {
+    backgroundColor: '#000000',
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    ...SHADOWS.md,
+  },
+  appleButtonDisabled: {
+    backgroundColor: COLORS.textLight,
+  },
+  appleButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.textInverse,
   },
   oauthNote: {
     ...TYPOGRAPHY.bodySmall,

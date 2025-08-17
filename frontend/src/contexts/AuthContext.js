@@ -16,10 +16,28 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [availableProviders, setAvailableProviders] = useState(['google']);
 
   useEffect(() => {
     checkAuthStatus();
+    fetchAvailableProviders();
   }, []);
+
+  const fetchAvailableProviders = async () => {
+    try {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${apiBaseUrl}/api/auth/providers`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableProviders(data.providers || ['google']);
+      }
+    } catch (error) {
+      console.error('Failed to fetch providers:', error);
+      setAvailableProviders(['google']);
+    }
+  };
 
   const checkAuthStatus = async () => {
     try {
@@ -42,21 +60,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = () => {
-    const authUrl = 'http://localhost:8080/oauth2/authorization/google';
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    const authUrl = `${apiBaseUrl}/oauth2/authorization/google`;
+    window.location.href = authUrl;
+  };
+
+  const loginWithApple = () => {
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    const authUrl = `${apiBaseUrl}/oauth2/authorization/apple`;
     window.location.href = authUrl;
   };
 
   const logout = () => {
+    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = 'http://localhost:8080/logout';
+    window.location.href = `${apiBaseUrl}/logout`;
   };
 
   const value = {
     user,
     isAuthenticated,
     isLoading,
+    availableProviders,
     loginWithGoogle,
+    loginWithApple,
     logout,
     checkAuthStatus
   };
