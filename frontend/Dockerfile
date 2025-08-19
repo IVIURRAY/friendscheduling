@@ -4,6 +4,10 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
+# Accept build argument for API URL
+ARG REACT_APP_API_URL=http://localhost:8080
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
 # Copy package files
 COPY package*.json ./
 

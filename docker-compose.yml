@@ -10,6 +10,10 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID}
+      - APPLE_TEAM_ID=${APPLE_TEAM_ID}
+      - APPLE_KEY_ID=${APPLE_KEY_ID}
+      - APPLE_PRIVATE_KEY=${APPLE_PRIVATE_KEY}
     volumes:
       - ./backend/src:/app/src
     networks:
@@ -26,6 +30,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8080}
     ports:
       - "19006:19006"
       - "19000:19000"
@@ -37,6 +43,7 @@ services:
       - EXPO_WEB=true
       - WDS_SOCKET_HOST=localhost
       - WDS_SOCKET_PORT=19006
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/assets:/app/assets
